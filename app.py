@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 load_dotenv()
-app.secret_key = os.envion.get('FLASK_SECRET_KEY') 
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') 
 
 # --- FLASK ROUTES ---
 
