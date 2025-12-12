@@ -1,13 +1,13 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash
 import db_manager # Import the separated database logic
-import os
+#import os
 from dotenv import load_dotenv
 
 
 app = Flask(__name__)
 load_dotenv()
-app.secret_key = os.envion.get('FLASK_SECRET_KEY') 
+#app.secret_key = os.envion.get('FLASK_SECRET_KEY') 
 
 # --- FLASK ROUTES ---
 
