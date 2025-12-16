@@ -1,13 +1,13 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash
 import db_manager # Import the separated database logic
-#import os
+import os
 from dotenv import load_dotenv
 
 
 app = Flask(__name__)
 load_dotenv()
-#app.secret_key = os.envion.get('FLASK_SECRET_KEY') 
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') 
 
 # --- FLASK ROUTES ---
 
@@ -28,7 +28,7 @@ def new_tourn_route():
         
         if name and status and type_str in ['solo', 'teamed']:
             db_manager.new_tournament(name, status, type_str)
-            flash(f'Tournament "{name}" created successfully!', 'success')
+            flash(f'Tournament "{name}" created successfully!', 'success)')
         else:
             flash('Invalid input for new tournament.', 'error')
             
@@ -131,7 +131,7 @@ def delete_tourn_route(tourn_id):
         db_manager.delete_tournament(tourn_id)
         flash(f'Tournament "{tourn_data["name"]}" deleted successfully.', 'success')
     else:
-        flash(f'Tournament ID {tourn_id} not found.', 'error')
+        flash(f'Tournament ID "{tourn_id}" not found.', 'error')
         
     return redirect(url_for('index'))
 

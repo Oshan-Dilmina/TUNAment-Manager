@@ -4,23 +4,42 @@
     <meta charset="UTF-8">
     <title>Tournament Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/interaction_decoration_stack.css') }}">
     <style>
         .success { color: green; }
         .error { color: red; }
         .info { color: blue; }
     </style>
+    {% block styles %}{% endblock %}
 </head>
 <body>
-    <a href="{{ url_for('index') }}"><button >Home</button></a>
+    <div id="overlay"></div>
 
+    <div id="popup">
+        <h2>Message</h2>
+        <p id="popupMessage"></p>
+        <button id="closeBtn" onclick="closePopup()">OK</button>
+    </div>
+
+    <div id="confirmPopup">
+        <p id="confirmMessage"></p>
+        <div class="button-container">
+            <button id="okButton" class="confirmBtn" onclick="confirmAction(true)">OK</button>
+            <button id="cancelButton" class="confirmBtn" onclick="confirmAction(false)">Cancel</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/interaction_decoration_stack.js') }}"></script>
     
+
+    <!--replace the flashes with a javascript alert-->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <ul class="flashes">
             {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
+                <script>
+                    showPopup("{{message}}")
+                </script>
             {% endfor %}
-            </ul>
         {% endif %}
     {% endwith %}
 

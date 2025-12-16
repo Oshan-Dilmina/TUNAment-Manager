@@ -1,13 +1,19 @@
 {% extends "base.html" %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/add_team.css') }}">
+{% endblock %}
 {% block content %}
-    <h1>Add Team to: {{ tournament.name }}</h1>
-    <form method="POST">
-        <label for="name">Team Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+    <div class="team-form">
+        <h1>Add Team to: {{ tournament.name }}</h1>
+        <form method="POST">
+            <label for="name">Team Name:</label>
+            <input type="text" id="name" name="name" required>
 
-        <label for="score">Initial Score:</label><br>
-        <input type="number" id="score" name="score" value="0"><br><br>
-        
-        <button type="submit" class="button-sub">Add Team</button>
-    </form>
+            <label for="score">Initial Score:</label>
+            <input type="number" id="score" name="score" value="0">
+            
+            <button type="submit" class="button-sub">Add Team</button>
+        </form>
+    </div>
+
 {% endblock %}

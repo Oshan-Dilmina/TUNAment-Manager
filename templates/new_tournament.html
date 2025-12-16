@@ -1,18 +1,86 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Create New Tournament</h1>
-    <form method="POST" action="{{ url_for('new_tourn_route') }}">
-        <label for="name">Tournament Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+    <style>
+        .tournament-form {
+            background-color: #2C2C2C; /* Dark Grey */
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="text"]{
+            width: 94%;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #37373E; /* Slightly Lighter Dark */
+            color: #EAEAEA;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
 
-        <label for="status">Status:</label><br>
-        <input type="text" id="status" name="status" value="Open" required><br><br>
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #37373E; /* Slightly Lighter Dark */
+            color: #EAEAEA;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #3498DB; /* Blue */
+            outline: none;
+        }
+        .button-sub {
+            background-color: #3498DB; /* Blue */
+            color: #EAEAEA;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        .button-sub:hover {
+            background-color: #5DADE2; /* Lighter Blue */
+        }
+        .spacer {
+            height: 60px;
+            width: auto;
+        }
+    </style>
+    <div class="nav">
+        <button class="home">
+            <img src="{{ url_for('static', filename='img/home.svg') }}" alt="home icon svg">
+        </button>
+        <h1>Create New Tournament</h1>
+    </div>
+    <hr>
+
+
+    <form method="POST" action="{{ url_for('new_tourn_route') }}" class="tournament-form">
+        <label for="name">Tournament Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="status">Status:</label>
+        <input type="text" id="status" name="status" value="Open" required>
         
-        <label for="type">Type:</label><br>
+        <label for="type">Type:</label>
         <select id="type" name="type" required>
             <option value="solo">Solo</option>
             <option value="teamed">Teamed</option>
-        </select><br><br>
+        </select>
+        <div class="spacer"></div>
         
         <button type="submit" class="button-sub">Create Tournament</button>
     </form>
