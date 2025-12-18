@@ -65,11 +65,10 @@ def delete_tournament(tourn_id):
     if tref is None: return
     tref.document(tourn_id).delete()
 
-def add_team_to_tournament(tourn_id, name, iniscore):
+def add_team_to_tournament(tourn_id, data=dict):
     """Adds a new team to a 'teamed' tournament."""
     if tref is None: return
-    teamdata = {'name': name, 'reg-time': firestore.firestore.SERVER_TIMESTAMP, 'score': iniscore}
-    tref.document(tourn_id).collection('teams').add(teamdata)
+    tref.document(tourn_id).collection('teams').add(data)
 
 def get_teams_for_tournament(tourn_id):
     """Gets all teams for a teamed tournament."""
@@ -116,7 +115,7 @@ def get_standings(tourn_id):
             standings.append({
                 'name': data.get('name', 'N/A Player'), 
                 'score': data.get('score', 0), 
-                'type': 'Player'
+                'id': doc.id
             })
             
     elif tourn_type == 'teamed':
@@ -127,7 +126,6 @@ def get_standings(tourn_id):
             standings.append({
                 'name': data.get('name', 'N/A Team'), 
                 'score': data.get('score', 0), 
-                'type': 'Team',
                 'id' : doc.id
             })
         
@@ -166,3 +164,50 @@ def delteam(team_id,tourn_id):
 
 def editteam(team_id,tourn_id,data):
     tref.document(tourn_id).collection('teams').document(team_id).update(data)
+
+
+
+def addplayer(tourn_id,data):
+    tref.document(tourn_id).collection('players').add(data)
+
+def editplayer(player_id,tourn_id,data):
+    tref.document(tourn_id).collection('players').document(player_id).update(data)
+
+def delplayer(player_id,tourn_id):
+    tref.document(tourn_id).collection('players').document(player_id).delete()
+
+def get_player_by_id(player_id,tourn_id):
+    if tref is None: return None
+    doc = tref.document(tourn_id).collection('players').document(player_id).get()
+    if doc.exists:
+        data = doc.to_dict()
+        data['id'] = doc.id
+        
+        return data
+        
+    return None
+
+def player_info(tourn_id):
+    tourn_data = get_tournament_by_id(tourn_id)
+    if not tourn_data:
+        return "Tournament not found", []
+
+    tourn_name = tourn_data.get('name', 'Unnamed Tournament')
+    tourn_type = tourn_data.get('type', 'solo')
+    
+    info = []
+
+    if tourn_type == 'solo':
+        # Get teams
+        players_ref = tref.document(tourn_id).collection('players')
+        for doc in players_ref.stream():
+            data = doc.to_dict()
+            info.append({
+                'name': data.get('name', 'N/A Team'), 
+                'score': data.get('score', 0),
+                'id' : doc.id
+            })
+        
+    # Sort the results by score (descending)
+    
+    return tourn_name, info

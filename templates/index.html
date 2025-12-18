@@ -17,15 +17,12 @@
             <tbody>
                 {% for t in tournaments %}
                 <tr>
-                    <td><a href="{{ url_for('view_team', tourn_id=t.id) }}">{{ t.name }} (ID: {{ t.id }})</a></td>
+                    <td><a href="{{ url_for('view_tournament', tourn_id=t.id) }}">{{ t.name }} (ID: {{ t.id }})</a></td>
                     <td>{{ t.type.capitalize() }}</td>
                     <td>{{ t.status }}</td>
                     <td>
                         <a href="{{ url_for('standings_route', tourn_id=t.id) }}"><button>Standings</button></a> |
                         <a href="{{ url_for('update_tourn_route', tourn_id=t.id) }}"><button>Update</button></a> |
-                        {% if t.type == 'teamed' %}
-                            <a href="{{ url_for('add_team_route', tourn_id=t.id) }}"><button>Add Team</button></a> |
-                        {% endif %}
                         <form method="POST" action="{{ url_for('delete_tourn_route', tourn_id=t.id) }}" style="display:inline;">
                             <button type="submit" class="button-dng" onclick="return confirm('Are you sure you want to delete {{ t.name }}?')"> Delete</button>
                         </form>

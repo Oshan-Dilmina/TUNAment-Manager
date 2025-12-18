@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ tourn_name }}</h1>
+    
+    {% if info %}
+        {% if tourn_type == 'teamed' %}
+            <p>Teams</p>
+        {% else %}
+            <p>Players</p>
+        {% endif %}
+        <table border="1" cellpadding="10" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in info %}
+                <tr>
+                    <td>{{ t.name }} - {{t.id}}</td>
+                    <td>{{ t.score }}</td>
+                    <td>
+                    {% if tourn_type == 'teamed' %}
+                    <form method="post" action="{{ url_for('del_team', tourn_id=tourn_id , team_id=t.id) }}" style="display:inline;">
+                        <button class="button-dng">Delete</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('del_player', tourn_id=tourn_id , player_id=t.id) }}" style="display:inline;">
+                        <button class="button-dng">Delete</button>
+                    </form>
+                    {% endif %}
+                    </td>
+                    <td>
+                        {% if tourn_type == 'teamed' %}
+                        <button 
+                            type="button" 
+                            class="modal-trigger" 
+                            data-modal-url="{{ url_for('geteditteam', tourn_id=tourn_id, team_id=t.id) }}">
+                            Edit
+                        </button>
+                        {% else %}
+                        <button 
+                            type="button" 
+                            class="modal-trigger" 
+                            data-modal-url="{{ url_for('geteditplayer', tourn_id=tourn_id, player_id=t.id) }}">
+                            Edit
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br><br>
+        
+
+
+
+    {% else %}
+        <p>No teams or players registered yet.</p>
+    {% endif %}
+
+    <br><br><br>
+
+    {% if tourn_type == 'teamed' %}
+            <button 
+                type="button" 
+                class="modal-trigger" 
+                data-modal-url="{{ url_for('getnewteam', tourn_id=tourn_id) }}">
+                Add Team
+            </button>
+    {% else %}
+            <button 
+                type="button" 
+                class="modal-trigger" 
+                data-modal-url="{{ url_for('getnewplayer', tourn_id=tourn_id) }}">
+                Add Player
+            </button>
+    {% endif %}
+    <a href="{{ url_for('standings_route', tourn_id=tourn_id) }}"><button>Standings</button></a>
+    
+{% endblock %}

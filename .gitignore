@@ -3,3 +3,4 @@ __pycache__/
 *.cpy
 .env
 .venv
+routes.txt
