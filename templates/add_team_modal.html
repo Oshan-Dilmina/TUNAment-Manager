@@ -1,4 +1,4 @@
-<form method="POST" action="{{ url_for('add_team_route', tourn_id=tourn_id) }}" id="ajax-form">
+<form method="POST" action="{{ url_for('add_team_route', tourn_id=tourn_id) }}" class="ajax-form">
     {{ form.hidden_tag() }}
 
     <h2>Add New Team to {{ tourn_data.name }}</h2>
@@ -12,7 +12,7 @@
 
     <div class="form-group" style="margin-top: 15px;">
         {{ form.score.label }}<br>
-        {{ form.score(class_="form-control", value = 0) }}
+        {{ form.score(class_="form-control") }}
     </div>
 
     <br>

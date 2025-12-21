@@ -15,7 +15,7 @@ try:
         firebase_admin.initialize_app(cred)
     db = firestore.client()
     tref = db.collection('tournament')
-    print("Firebase initialized successfully in db_manager.")
+    print(" + Firebase initialized successfully in db_manager.")
 except Exception as e:
     print(f"Error initializing Firebase: {e}")
     db = None
@@ -39,19 +39,27 @@ def get_all_tournaments():
     return tlist_data
 
 def get_tournament_by_id(tourn_id):
-    """Fetches a single tournament document."""
     if tref is None: return None
     doc = tref.document(tourn_id).get()
     if doc.exists:
         data = doc.to_dict()
         data['id'] = doc.id
         return data
-    return None
+    # Change: return this dict so app.py doesn't break
+    return {'name': "Tournament not found", 'type': 'solo'}
+
+def get_tournament_round_count(tourn_id):
+    if tref is None: return None
+    doc = tref.document(tourn_id).get()
+    if doc.exists:
+        data = doc.to_dict()
+
+    return data['round_count']
 
 def new_tournament(name, status, type_str):
     """Creates a new tournament document."""
     if tref is None: return
-    info = {'name': name, 'status': status, 'reg-time': firestore.firestore.SERVER_TIMESTAMP, 'type': type_str}
+    info = {'name': name, 'status': status, 'reg-time': firestore.firestore.SERVER_TIMESTAMP, 'type': type_str, 'round_count' : 0}
     tref.add(info)
 
 def update_tournament(tourn_id, new_data):
@@ -93,8 +101,6 @@ def get_team_by_id(team_id,tourn_id):
         
     return None
 
-def del_team(tourn_id,team_id):
-    tref.document(tourn_id).collection('teams').document(team_id)
 
 def get_standings(tourn_id):
     """Calculates and returns sorted standings (players or teams)."""
@@ -176,6 +182,25 @@ def editplayer(player_id,tourn_id,data):
 def delplayer(player_id,tourn_id):
     tref.document(tourn_id).collection('players').document(player_id).delete()
 
+def player_info(tourn_id):
+    tourn_data = get_tournament_by_id(tourn_id)
+    if not tourn_data or tourn_data.get('name') == "Tournament not found":
+        return "Tournament not found", []
+
+    tourn_name = tourn_data.get('name', 'Unnamed Tournament')
+    
+    info = []
+    # Make sure you are pulling from 'players' collection
+    players_ref = tref.document(tourn_id).collection('players')
+    for doc in players_ref.stream():
+        data = doc.to_dict()
+        info.append({
+            'name': data.get('name', 'N/A Player'), # Fixed label
+            'score': data.get('score', 0),
+            'id' : doc.id
+        })
+    return tourn_name, info
+
 def get_player_by_id(player_id,tourn_id):
     if tref is None: return None
     doc = tref.document(tourn_id).collection('players').document(player_id).get()
@@ -187,27 +212,19 @@ def get_player_by_id(player_id,tourn_id):
         
     return None
 
-def player_info(tourn_id):
-    tourn_data = get_tournament_by_id(tourn_id)
-    if not tourn_data:
-        return "Tournament not found", []
+def get_players_alphabetical(tourn_id):
+    players_ref = tref.document(tourn_id).collection('players')
+    players = []
+    for doc in players_ref.stream():
+        data = doc.to_dict()
+        data['id'] = doc.id
+        players.append(data)
+    return sorted(players, key=lambda x: x['name'])
 
-    tourn_name = tourn_data.get('name', 'Unnamed Tournament')
-    tourn_type = tourn_data.get('type', 'solo')
-    
-    info = []
-
-    if tourn_type == 'solo':
-        # Get teams
-        players_ref = tref.document(tourn_id).collection('players')
-        for doc in players_ref.stream():
-            data = doc.to_dict()
-            info.append({
-                'name': data.get('name', 'N/A Team'), 
-                'score': data.get('score', 0),
-                'id' : doc.id
-            })
-        
-    # Sort the results by score (descending)
-    
-    return tourn_name, info
+def save_matches(tourn_id, round_number, matches):
+    round_ref = tref.document(tourn_id).collection('rounds').document(f'round_{round_number}')
+    round_ref.set({
+        'round_number': round_number,
+        'matches': matches,
+        'status': 'in_progress'
+    })

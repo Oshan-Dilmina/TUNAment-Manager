@@ -5,15 +5,15 @@ from wtforms.validators import DataRequired, NumberRange, ValidationError, Input
 
 class AddTeamForm(FlaskForm):
     name = StringField('Team Name', validators=[DataRequired('Team Name can not be empty ')])
-    score = IntegerField('Score', validators=[InputRequired('Team Score can not be empty ')],default=0)
+    score = IntegerField('Score', validators=[InputRequired('Team Score can not be empty '),NumberRange(-100000,+100000,'Score is not in the range')],default=0)
 
 class EditTeamForm(FlaskForm):
     name = StringField('Team Name', validators=[DataRequired('Team Name can not be empty ')])
-    score = IntegerField('Score', validators=[DataRequired('Team Score can not be empty ')])
+    score = IntegerField('Score', validators=[DataRequired('Team Score can not be empty '),NumberRange(-100000,+100000,'Score is not in the range')])
 
 class AddPlayerForm(FlaskForm):
     name = StringField('Player Name', validators=[DataRequired('Player Name can not be empty ')])
-    score = IntegerField('Score', validators=[InputRequired('Player Score can not be empty '),NumberRange(-100000,+100000,'Score is not in the range')])
+    score = IntegerField('Score', validators=[InputRequired('Player Score can not be empty '),NumberRange(-100000,+100000,'Score is not in the range')],default=0)
 
 class EditPlayerForm(FlaskForm):
     name = StringField('Player Name', validators=[DataRequired('Player Name can not be empty ')])

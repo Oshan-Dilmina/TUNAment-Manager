@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <h2>Swiss Pairings - Round {{ round_count }}</h2>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Table</th>
+                <th>Participant 1 (Score)</th>
+                <th>vs</th>
+                <th>Participant 2 (Score)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in pairings %}
+            <tr>
+                <td>{{ match.table }}</td>
+                
+                {# Logic to extract the correct player regardless of solo or team #}
+                {% if t_type == 'solo' %}
+                    {% set p1 = match.p1 %}
+                    {% set p2 = match.p2 %}
+                {% else %}
+                    {% set p1 = match.t1 %}
+                    {% set p2 = match.t2 %}
+                {% endif %}
+
+                {# Render Player 1 #}
+                <td><strong>{{ p1.name }}</strong> ({{ p1.score }})</td>
+
+                <td class="text-muted">VS</td>
+
+                {# Render Player 2 (checks if it's an object or just the "BYE" string) #}
+                <td>
+                    {% if p2 is mapping %}
+                        <strong>{{ p2.name }}</strong> ({{ p2.score }})
+                    {% else %}
+                        <em class="text-danger">{{ p2 }}</em>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+
+            {# Separate Section for the official BYE Pair returned by your script #}
+            {% if bye_pair %}
+            <tr class="table-info">
+                <td>—</td>
+                {% set b_player = bye_pair.p1 if t_type == 'solo' else bye_pair.t1 %}
+                <td><strong>{{ b_player.name }}</strong> ({{ b_player.score }})</td>
+                <td colspan="2" class="text-center"><em>RECEIVES BYE</em></td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="actions no-print" style="margin-top: 20px;">
+        <button onclick="window.print()" class="btn-print">Print Pairings</button>
+        <a href="{{ url_for('view_tournament', tourn_id=tourn_id) }}" class="btn-secondary">Back to Tournament</a>
+    </div>
+</div>
+
+<style>
+    @media print { .no-print { display: none; } }
+    .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .table th, .table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    .table-info { background-color: #e7f3ff; }
+    .text-center { text-align: center; }
+</style>
+
+{% endblock %}

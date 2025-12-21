@@ -4,8 +4,8 @@ import db_manager # Import the separated database logic
 import os
 from dotenv import load_dotenv
 from forms import *
-
-
+import random
+import pair
 
 app = Flask(__name__)
 load_dotenv()
@@ -41,7 +41,7 @@ def new_tourn_route():
     return render_template('new_tournament.html')
 
 
-@app.route('/tournament/<tourn_id>/new_team', methods=['POST'])
+@app.route('/tournament/<tourn_id>/teams/new', methods=['POST'])
 def add_team_route(tourn_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
     if not tourn_data or tourn_data.get('type') != 'teamed':
@@ -53,7 +53,7 @@ def add_team_route(tourn_id):
     addteamform = AddTeamForm()
     if addteamform.validate_on_submit():
         try:
-            data = {'name': addteamform.name.data, 'score' : addteamform.score.data, 'reg-time' : db_manager.firestore.firestore.SERVER_TIMESTAMP}
+            data = {'name': addteamform.name.data, 'score' : addteamform.score.data, 'reg-time' : db_manager.firestore.firestore.SERVER_TIMESTAMP, 'byes' : 0, 'last_bye_round' : 0, 'op' : []}
             db_manager.add_team_to_tournament(tourn_id,data)
             return jsonify({'success': True})
         except Exception as e:
@@ -62,7 +62,7 @@ def add_team_route(tourn_id):
         errors = {field: errors for field, errors in addteamform.errors.items()}
         return jsonify({'success': False, 'errors': errors}), 400
     
-@app.route('/tournament/<tourn_id>/new_team/add', methods=['GET'])
+@app.route('/tournament/<tourn_id>/teams/new/modal', methods=['GET'])
 def getnewteam(tourn_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
     form = AddTeamForm()
@@ -71,7 +71,7 @@ def getnewteam(tourn_id):
                            tourn_data=tourn_data, 
                            form=form)
 
-@app.route('/tournament/<tourn_id>/new_player', methods=['POST'])
+@app.route('/tournament/<tourn_id>/players/new', methods=['POST'])
 def add_player_route(tourn_id):
     """Route for adding a team to a tournament."""
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
@@ -82,7 +82,7 @@ def add_player_route(tourn_id):
     addplayerform = AddPlayerForm()
     if addplayerform.validate_on_submit():
         try:
-            data = {'name': addplayerform.name.data, 'score' : addplayerform.score.data, 'reg-time' : db_manager.firestore.firestore.SERVER_TIMESTAMP}
+            data = {'name': addplayerform.name.data, 'score' : addplayerform.score.data, 'reg-time' : db_manager.firestore.firestore.SERVER_TIMESTAMP, 'byes' : 0, 'last_bye_round' : 0, 'op' : []}
             db_manager.addplayer(tourn_id,data)
             return jsonify({'success': True})
         except Exception as e:
@@ -91,7 +91,7 @@ def add_player_route(tourn_id):
         errors = {field: errors for field, errors in addplayerform.errors.items()}
         return jsonify({'success': False, 'errors': errors}), 400
     
-@app.route('/tournament/<tourn_id>/new_player/add', methods=['GET'])
+@app.route('/tournament/<tourn_id>/players/new/modal', methods=['GET'])
 def getnewplayer(tourn_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
     form = AddPlayerForm()
@@ -103,7 +103,7 @@ def getnewplayer(tourn_id):
 
 #-----------------------------EDIT/UPDATE------------------------------------------------------------------
 
-@app.route('/tournament/<tourn_id>/<team_id>/edit/', methods=['POST'])
+@app.route('/tournament/<tourn_id>/teams/<team_id>/edits', methods=['POST'])
 def edit_team(tourn_id,team_id):
     tourn_name, info = db_manager.team_info(tourn_id)
     data = db_manager.get_team_by_id(team_id,tourn_id)
@@ -126,7 +126,7 @@ def edit_team(tourn_id,team_id):
         return jsonify({'success': False, 'errors': errors}), 400
 
 
-@app.route('/tournament/<tourn_id>/<team_id>/edit/modal', methods=['GET'])
+@app.route('/tournament/<tourn_id>/teams/<team_id>/edit/modal', methods=['GET'])
 def geteditteam(tourn_id, team_id):
     tourn_name = db_manager.get_tournament_by_id(tourn_id)['name']
     data = db_manager.get_team_by_id(team_id,tourn_id)
@@ -145,45 +145,30 @@ def geteditteam(tourn_id, team_id):
                            )
 
 
-@app.route('/tournament/<tourn_id>/<player_id>/edit', methods=['POST'])
-def edit_player(tourn_id,player_id):
-    data = db_manager.get_player_by_id(player_id,tourn_id)
-    tourn_name = db_manager.get_tournament_by_id(tourn_id)['name']
-
-    if tourn_name == "Tournament not found":
-        flash(f'Tournament ID {tourn_id} not found.', 'error')
-        return redirect(url_for('index'))
-
-    editplayerform = EditPlayerForm(data=data)
-    if editplayerform.validate_on_submit():
-        try:
-            newdata = {'name': editplayerform.name.data, 'score' : editplayerform.score.data}
-            db_manager.editplayer(player_id,tourn_id,newdata)
-            return jsonify({'success': True})
-        except Exception as e:
-            return jsonify({'success': False, 'error': f'DB Error: {str(e)}'}), 500
-    else:
-        errors = {field: errors for field, errors in editplayerform.errors.items()}
-        return jsonify({'success': False, 'errors': errors}), 400
-
-
-@app.route('/tournament/<tourn_id>/<player_id>/edit/modal', methods=['GET'])
-def geteditplayer(tourn_id, player_id):
-    tourn_name = db_manager.get_tournament_by_id(tourn_id)['name']
-    data = db_manager.get_player_by_id(player_id,tourn_id)
-
-    if not data:
-        return jsonify({'error':'Team not found'}), 404
+# 1. THE SAVING ROUTE (POST)
+@app.route('/tournament/<tourn_id>/players/<player_id>/edit', methods=['POST'])
+def edit_player(tourn_id, player_id):
+    form = EditPlayerForm()
+    if form.validate_on_submit():
+        newdata = {'name': form.name.data.strip(), 'score': form.score.data}
+        db_manager.editplayer(player_id, tourn_id, newdata)
+        return jsonify({'success': True})
     
-    data['name'] = data['name'].strip()
-    form = EditPlayerForm(data=data)
+    errors = {field: errs for field, errs in form.errors.items()}
+    return jsonify({'success': False, 'errors': errors}), 400
 
-    return render_template('edit_player_modal.html',
-                           tourn_id = tourn_id,
-                           tourn_name = tourn_name,
-                           data = data,
-                           form = form
-                           )
+
+@app.route('/tournament/<tourn_id>/players/<player_id>/edit/modal', methods=['GET'])
+def geteditplayer(tourn_id, player_id):
+    data = db_manager.get_player_by_id(player_id, tourn_id)
+    if not data:
+        return "Player not found", 404
+        
+    form = EditPlayerForm(data=data)
+    return render_template('edit_player_modal.html', 
+                           tourn_id=tourn_id, 
+                           data=data, 
+                           form=form)
 
 
 @app.route('/tournament/<tourn_id>/update', methods=['GET', 'POST'])
@@ -219,13 +204,13 @@ def update_tourn_route(tourn_id):
 #----------------------------------DELETE/REMOVE---------------------------------------------------------
 
 
-@app.route('/tournament/<tourn_id>/<team_id>delete', methods=['POST'])
+@app.route('/tournament/<tourn_id>/teams/<team_id>delete', methods=['POST'])
 def del_team(team_id,tourn_id):
     
     db_manager.delteam(team_id,tourn_id)
     return redirect(url_for('view_tournament',tourn_id=tourn_id))    
 
-@app.route('/tournament/<tourn_id>/<player_id>/delete', methods=['POST'])
+@app.route('/tournament/<tourn_id>/players/<player_id>/delete', methods=['POST'])
 def del_player(player_id,tourn_id):
     
     db_manager.delplayer(player_id,tourn_id)
@@ -288,6 +273,24 @@ def standings_route(tourn_id):
                            tourn_id=tourn_id,
                            standings=standings,
                            )
+
+
+
+@app.route('/tournament/<tourn_id>/pair')
+def pairing(tourn_id):
+    round_count = db_manager.get_tournament_round_count(tourn_id) + 1
+    
+    if db_manager.get_tournament_by_id(tourn_id)['type'] == 'solo':
+        pairings, bye_pair = pair.SoloPair(tourn_id,round_count).pair()
+    else:
+        pairings, bye_pair = pair.TeamPair(tourn_id,round_count).pair()
+
+    return render_template('pairings.html', 
+                        pairings=pairings, 
+                        bye_pair=bye_pair, 
+                        tourn_id=tourn_id,
+                        t_type = db_manager.get_tournament_by_id(tourn_id)['type'])
+
 
 if __name__ == '__main__':
     app.run(debug=True)

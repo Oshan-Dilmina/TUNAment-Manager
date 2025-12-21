@@ -1,5 +1,5 @@
-<form method="POST" action="{{ url_for('edit_team', tourn_id=tourn_id, team_id=data.id) }}"
-      id="ajax-form"> 
+<form method="POST" action="{{ url_for('edit_player', tourn_id=tourn_id, player_id=data.id) }}"
+      class="ajax-form"> 
 
     {{ form.hidden_tag() }} 
 
@@ -17,5 +17,5 @@
     
     <br><br>
     
-    <button type="submit" class="button-sub">Update Team</button>
+    <button type="submit" class="button-sub">Update Player</button>
 </form>

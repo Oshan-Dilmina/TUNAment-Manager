@@ -3,34 +3,36 @@
 $(document).ready(function() {
     // Select essential DOM elements
     const modalContainer = $('#modal-container'); // The background overlay
-    const modalContent = $('#modal-content'); // The inner box
-    const modalBody = $('#modal-body');       // Where the form HTML is inserted
-    const closeModalBtn = $('#close-modal-btn'); // The close button (X)
+    const modalContent = $('#modal-content');     // The inner box
+    const modalBody = $('#modal-body');           // Where the form HTML is inserted
+    const closeModalBtn = $('#close-modal-btn');  // The close button (X)
 
-    // --- A. Handle Opening the Modal (Intercepts Click) ---
+    // --- A. Handle Opening the Modal ---
     // Listens for clicks on any element with the class 'modal-trigger'
     $(document).on('click', '.modal-trigger', function() {
         const url = $(this).data('modal-url'); // Get the URL from the button's data attribute
 
-        // 1. Prepare and show the container
-        modalBody.html('<p style="text-align: center;">Loading...</p>');
+        // 1. Prepare and show the container immediately (Zero lag)
+        modalBody.html('<p style="text-align: center; padding: 20px;">Loading form...</p>');
         modalContainer.show(); 
         
-        // Optional: Fade in the inner content slightly delayed for smoother look
+        // Smoother look for the inner content
         modalContent.hide().fadeIn(150); 
 
-        // 2. Send AJAX GET request to fetch the form HTML
+        // 2. Send AJAX GET request to fetch the form HTML from Flask
         $.get(url, function(data) {
-            // Success: Insert the fetched HTML into the modal body
             modalBody.html(data); 
+            
+            // Auto-focus the first input so the user can start typing immediately
+            modalBody.find('input[type="text"], input[type="number"]').first().focus();
         })
         .fail(function(jqXHR) {
-            // Error: Handle cases where the Flask route returns 404/500
-            let errorMsg = 'Error loading form. Please check the URL and server logs.';
+            // Handle cases where the Flask route returns 404 or 500
+            let errorMsg = 'Error loading form. Please check the server logs.';
             if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
                 errorMsg = jqXHR.responseJSON.error;
             }
-            modalBody.html('<p style="color: red;">' + errorMsg + '</p>');
+            modalBody.html('<p style="color: red; padding: 20px; text-align: center;">' + errorMsg + '</p>');
         });
     });
 
@@ -39,73 +41,61 @@ $(document).ready(function() {
     // 1. Close when the 'X' button is clicked
     closeModalBtn.on('click', function() {
         modalContainer.hide();
-        modalBody.empty(); // Clear content to reset the form state
+        modalBody.empty(); // Clear content to reset state
     });
 
-    // 2. Close when the user clicks anywhere on the dark background (outside the content box)
+    // 2. Close when the user clicks on the dark background overlay (outside the white box)
     modalContainer.on('click', function(e) {
-        // If the click target is the container itself, not a child element
         if (e.target.id === 'modal-container') {
             modalContainer.hide();
             modalBody.empty();
         }
     });
 
-
-    // --- C. Handle Form Submission (Intercepts POST) ---
-    // Listens for submission on the form with id="ajax-form", which is dynamically added to modalBody
-    $(document).on('submit', '#ajax-form', function(e) {
-        e.preventDefault(); // STOP the browser from submitting the form normally (prevent page reload)
-
+    // --- C. Handle Form Submission (AJAX POST) ---
+    // Using a class (.ajax-form) instead of an ID (#ajax-form) prevents conflicts
+    $(document).on('submit', '.ajax-form', function(e) {
+        e.preventDefault();
+    
+        // $(this) refers specifically to the form currently being submitted
         const form = $(this);
-        const url = form.attr('action'); // Get the POST endpoint URL
-        const formErrorsDiv = $('#form-errors');
-        formErrorsDiv.empty(); // Clear previous errors
-
-        // 1. Send AJAX POST request with form data
+        const errorDiv = form.find('#form-errors'); 
+        errorDiv.empty();
         $.ajax({
-            type: form.attr('method'), 
-            url: url,
-            data: form.serialize(), // Includes all form data, including the CSRF token
-            
+            type: form.attr('method'),
+            url: form.attr('action'),
+            data: form.serialize(),
             success: function(response) {
-                // SUCCESS: Flask route returned 200 OK
                 if (response.success) {
-                    modalContainer.hide();
-                    
-                    // Simple way to show a success message:
-                    //alert('Action successful! Reloading page to show updates.'); 
-                    
-                    // Reload the page to display the updated data and clear flash messages
-                    window.location.reload(); 
+                    // Refresh the page to reflect the database changes (New Player/Team/Edit)
+                    location.reload(); 
                 }
             },
-            
             error: function(jqXHR) {
-                // FAILURE: Flask route returned HTTP 400 (Validation Error) or 500 (DB Error)
+                // FAILURE: Flask route returned HTTP 400 (Validation) or 500 (Server Error)
+                let errorHtml = '<ul style="list-style-type: none; padding: 0; margin-bottom: 10px;">';
                 
                 if (jqXHR.status === 400 && jqXHR.responseJSON && jqXHR.responseJSON.errors) {
-                    // Validation Errors (from Flask-WTF)
-                    let errorHtml = '<ul>';
-                    // Loop through the dictionary of errors (e.g., {'name': ['This field is required.']})
+                    // Validation Errors from Flask-WTF (e.g., Score cannot be empty)
                     for (let field in jqXHR.responseJSON.errors) {
                         jqXHR.responseJSON.errors[field].forEach(error => {
                             // Capitalize the field name for display
                             const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
-                            errorHtml += `<li><strong>${fieldName}</strong>: ${error}</li>`;
+                            errorHtml += `<li style="color: red;"><strong>${fieldName}</strong>: ${error}</li>`;
                         });
                     }
-                    errorHtml += '</ul>';
-                    formErrorsDiv.html(errorHtml); // Display errors inside the form
                 } 
-                else if (jqXHR.status === 500 && jqXHR.responseJSON && jqXHR.responseJSON.error) {
-                    // Database or Server Error (500)
-                     formErrorsDiv.html(`<ul><li>Server Error: ${jqXHR.responseJSON.error}</li></ul>`);
-                }
+                else if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                    // Custom error messages sent from Flask via jsonify({'error': '...'})
+                    errorHtml += `<li style="color: red;">${jqXHR.responseJSON.error}</li>`;
+                } 
                 else {
-                    // General AJAX or unexpected error
-                    alert('An unknown error occurred. Please try again.');
+                    // Generic fallback for network issues or unhandled exceptions
+                    errorHtml += '<li style="color: red;">An unexpected error occurred. Please try again.</li>';
                 }
+                
+                errorHtml += '</ul>';
+                errorDiv.html(errorHtml);
             }
         });
     });
