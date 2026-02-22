@@ -8,12 +8,37 @@
         .success { color: green; }
         .error { color: red; }
         .info { color: blue; }
+        
+        /* BASIC MODAL STYLES (REQUIRED FOR POP-UP) */
+        #modal-container { 
+            position: fixed; 
+            inset: 0; /* Shorthand for top:0, left:0, bottom:0, right:0 */
+            background: rgba(0,0,0,0.5); 
+            z-index: 1000; 
+            display: none; /* MUST BE HIDDEN BY DEFAULT */
+        }
+        #modal-content {
+            background: white; 
+            margin: 10% auto; 
+            padding: 20px; 
+            width: 80%; 
+            max-width: 500px; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #close-modal-btn {
+            float: right; 
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            border: none;
+            background: transparent;
+        }
     </style>
 </head>
 <body>
-    <a href="{{ url_for('index') }}"><button >Home</button></a>
+    <a href="{{ url_for('index') }}"><button>Home</button></a>
 
-    
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <ul class="flashes">
@@ -27,6 +52,17 @@
     <main>
         {% block content %}{% endblock %}
     </main>
+    
+    <div id="modal-container">
+        <div id="modal-content">
+            <button id="close-modal-btn">&times;</button>
+            <div id="modal-body">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 </body>
 </html>

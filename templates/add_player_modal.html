@@ -1,0 +1,25 @@
+<form method="POST" action="{{ url_for('add_player_route', tourn_id=tourn_id) }}" class="ajax-form">
+    {{ form.hidden_tag() }}
+
+    <h2>Add New Player to {{ tourn_data.name }}</h2>
+
+    <div id="form-errors" style="color: red; margin-bottom: 10px;"></div>
+
+    <div class="form-group">
+        {{ form.firstname.label }}<br>
+        {{ form.firstname(class_="form-control", placeholder="Enter first name", autocomplete="off") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.lastname.label }}<br>
+        {{ form.lastname(class_="form-control", placeholder="Enter last name", autocomplete="off") }}
+    </div>
+
+    <div class="form-group" style="margin-top: 15px;">
+        {{ form.score.label }}<br>
+        {{ form.score(class_="form-control") }}
+    </div>
+
+    <br>
+    <button type="submit" class="button-sub">Add Player</button>
+</form>

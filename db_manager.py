@@ -15,9 +15,9 @@ try:
         firebase_admin.initialize_app(cred)
     db = firestore.client()
     tref = db.collection('tournament')
-    print("Firebase initialized successfully in db_manager.")
+    print(" + Firebase initialized successfully in db_manager.")
 except Exception as e:
-    print(f"Error initializing Firebase: {e}")
+    print(f" + Error initializing Firebase: {e}")
     db = None
     tref = None
 
@@ -39,19 +39,35 @@ def get_all_tournaments():
     return tlist_data
 
 def get_tournament_by_id(tourn_id):
-    """Fetches a single tournament document."""
     if tref is None: return None
     doc = tref.document(tourn_id).get()
     if doc.exists:
         data = doc.to_dict()
         data['id'] = doc.id
         return data
-    return None
+    # Change: return this dict so app.py doesn't break
+    return {'name': "Tournament not found", 'type': 'solo'}
 
-def new_tournament(name, status, type_str):
+def get_tournament_current_round(tourn_id):
+    if tref is None: return None
+    doc = tref.document(tourn_id).get()
+    if doc.exists:
+        data = doc.to_dict()
+
+    return data['current_round']
+
+def new_tournament(name, status, type_str, strict, default_bye):
     """Creates a new tournament document."""
     if tref is None: return
-    info = {'name': name, 'status': status, 'reg-time': firestore.firestore.SERVER_TIMESTAMP, 'type': type_str}
+    info = {
+        'name': name,
+        'status': status,
+        'type': type_str,
+        'strict': strict, 
+        'current_round': 0,
+        'defualt_bye' : default_bye,
+        'time_created' : firestore.firestore.SERVER_TIMESTAMP
+    }
     tref.add(info)
 
 def update_tournament(tourn_id, new_data):
@@ -65,11 +81,10 @@ def delete_tournament(tourn_id):
     if tref is None: return
     tref.document(tourn_id).delete()
 
-def add_team_to_tournament(tourn_id, name, iniscore):
+def add_team_to_tournament(tourn_id, data=dict):
     """Adds a new team to a 'teamed' tournament."""
     if tref is None: return
-    teamdata = {'name': name, 'reg-time': firestore.firestore.SERVER_TIMESTAMP, 'score': iniscore}
-    tref.document(tourn_id).collection('teams').add(teamdata)
+    tref.document(tourn_id).collection('teams').add(data)
 
 def get_teams_for_tournament(tourn_id):
     """Gets all teams for a teamed tournament."""
@@ -94,8 +109,6 @@ def get_team_by_id(team_id,tourn_id):
         
     return None
 
-def del_team(tourn_id,team_id):
-    tref.document(tourn_id).collection('teams').document(team_id)
 
 def get_standings(tourn_id):
     """Calculates and returns sorted standings (players or teams)."""
@@ -116,7 +129,7 @@ def get_standings(tourn_id):
             standings.append({
                 'name': data.get('name', 'N/A Player'), 
                 'score': data.get('score', 0), 
-                'type': 'Player'
+                'id': doc.id
             })
             
     elif tourn_type == 'teamed':
@@ -127,7 +140,6 @@ def get_standings(tourn_id):
             standings.append({
                 'name': data.get('name', 'N/A Team'), 
                 'score': data.get('score', 0), 
-                'type': 'Team',
                 'id' : doc.id
             })
         
@@ -166,3 +178,72 @@ def delteam(team_id,tourn_id):
 
 def editteam(team_id,tourn_id,data):
     tref.document(tourn_id).collection('teams').document(team_id).update(data)
+
+
+
+def addplayer(tourn_id,data):
+    tref.document(tourn_id).collection('players').add(data)
+
+def editplayer(player_id,tourn_id,data):
+    tref.document(tourn_id).collection('players').document(player_id).update(data)
+
+def delplayer(player_id,tourn_id):
+    tref.document(tourn_id).collection('players').document(player_id).delete()
+
+def player_info(tourn_id):
+    tourn_data = get_tournament_by_id(tourn_id)
+    if not tourn_data or tourn_data.get('name') == "Tournament not found":
+        return "Tournament not found", []
+
+    tourn_name = tourn_data.get('name', 'Unnamed Tournament')
+    
+    info = []
+    # Make sure you are pulling from 'players' collection
+    players_ref = tref.document(tourn_id).collection('players')
+    for doc in players_ref.stream():
+        data = doc.to_dict()
+        info.append({
+            'firstname': data.get('firstname', 'N/A Player'),
+            'lastname': data.get('lastname', 'N/A Player'), # Fixed label
+            'name' : data.get('name', 'N/A Player'),
+            'score': data.get('score', 0),
+            'id' : doc.id
+        })
+    return tourn_name, info
+
+def get_player_by_id(player_id,tourn_id):
+    if tref is None: return None
+    doc = tref.document(tourn_id).collection('players').document(player_id).get()
+    if doc.exists:
+        data = doc.to_dict()
+        data['id'] = doc.id
+        
+        return data
+        
+    return None
+
+def get_players_alphabetical(tourn_id):
+    players_ref = tref.document(tourn_id).collection('players')
+    players = []
+    for doc in players_ref.stream():
+        data = doc.to_dict()
+        data['id'] = doc.id
+        players.append(data)
+    return sorted(players, key=lambda x: x['name'])
+
+
+def save_pairings(tourn_id, round_number, pairs, bye, ongoing):
+    round_info = {'round_number':round_number,'ongoing': ongoing,'pairs':pairs, 'bye_pair':bye}
+    tref.document(tourn_id).collection('rounds').document(f'{round_number}').set(round_info)
+    
+
+def get_round_info(tourn_id):
+    rounds_list = []
+    rounds = tref.document(tourn_id).collection('rounds')
+    for round in rounds.stream():
+        info = round.to_dict()
+        info['id'] = round.id
+        rounds_list.append(info)
+    rounds_list = sorted(rounds_list, key=lambda x:x['round_number'], reverse=True)
+    return rounds_list
+
