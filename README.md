@@ -1,24 +1,16 @@
 # Tournament Manager (Scrabble Edition)
 
-A specialized tournament management engine built with **Python** and **Flask**. While currently optimized for the specific scoring and flow of **Scrabble**, the architecture is designed to eventually support various games like Chess, TCGs, and more.
+A specialized tournament management engine built with **Python** and **Flask**. While currently optimized for the specific scoring and flow of **Scrabble**, the architecture is designed to eventually support various games like Chess.
 
 > [!IMPORTANT]  
 > **Note:** This project is in active development. Features like UI enhancements, advanced tie-breaking, and pairing exports are currently under construction.
-
-## 🚀 Features
-
-* **Scrabble-Ready:** Built-in logic for tracking point spreads and margins.
-* **Swiss System Pairing:** Automatically generates fair match-ups based on current tournament performance.
-* **Live Standings:** Real-time leaderboard updates calculated by total margins.
-* **Cloud Backend:** Leverages **Google Firestore** for a scalable, NoSQL data structure.
-* **Secure Entry:** Uses **WTForms** for clean, validated data input.
 
 
 ## ⚙️ Installation & Setup
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/your-username/tournament-manager.git
+git clone [https://github.com/your-username/tournament-manager.git](https://github.com/Oshan-Dilmina/Tournament-Manager.git)
 cd Tournament-Manager
 pip install -r requirements.txt
 ```
