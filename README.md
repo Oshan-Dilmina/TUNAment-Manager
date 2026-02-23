@@ -1,6 +1,6 @@
 # Tournament Manager (Scrabble Edition)
 
-A specialized tournament management engine built with **Python** and **Flask**. While currently optimized for the specific scoring and flow of **Scrabble**, the architecture is designed to eventually support various games like Chess.
+A specialized tournament management engine built with **Python** and **Flask**. Currently only supported for **Scrabble**,
 
 > [!IMPORTANT]  
 > **Note:** This project is in active development. Features like UI enhancements, advanced tie-breaking, and pairing exports are currently under construction.
