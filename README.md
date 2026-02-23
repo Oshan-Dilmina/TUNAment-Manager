@@ -10,7 +10,7 @@ A tournament management engine built with **Python** and **Flask**. Currently on
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/your-username/tournament-manager.git
+git clone https://github.com/Oshan-Dilmina/Tournament-Manager
 cd Tournament-Manager
 pip install -r requirements.txt
 ```
