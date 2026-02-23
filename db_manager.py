@@ -1,18 +1,11 @@
-# db_manager.py
-import os
 import firebase_admin
 from firebase_admin import credentials, firestore
+from dotenv import load_dotenv
 
-# --- FIREBASE SETUP (Centralized) ---
+load_dotenv()
+# --- FIREBASE SETUP ---
 try:
-    cred_path = 'tournament-mgr-caf10-firebase-adminsdk-fbsvc-9e0b266b27.json'
-    if not os.path.exists(cred_path):
-        # Raise an exception if the key file is missing
-        raise FileNotFoundError(f"Service account key not found at {cred_path}")
-        
-    cred = credentials.Certificate(cred_path)
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app()
     db = firestore.client()
     tref = db.collection('tournament')
     print(" + Firebase initialized successfully in db_manager.")

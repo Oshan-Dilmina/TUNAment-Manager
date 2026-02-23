@@ -1,10 +1,8 @@
-# app.py
 from flask import Flask, render_template, request, redirect, url_for, flash , jsonify
 import db_manager # Import the separated database logic
 import os
 from dotenv import load_dotenv
 from forms import *
-import random
 import pair
 
 app = Flask(__name__)
