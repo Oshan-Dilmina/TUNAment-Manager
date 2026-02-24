@@ -39,7 +39,7 @@ FLASK_SECRET_KEY =Use_a_random_string_here
 GOOGLE_APPLICATION_CREDENTIALS="service-account.json"
 ```
 > [!IMPORTANT]  
-> **Note:** You should name te variables exactly as showen above.
+> **Note:** You should name the variables exactly as showen above.
 
 ### 4. Start the Programme
 
@@ -58,5 +58,7 @@ Then open [locahost:5000](http://127.0.0.1:5000) from your browser
 * **Tie-breaking**: Standings are currently calculated solely by margins.
 * **UI/UX**: A full interface overhaul is in progress.
 * **Exports**: "Download Pairings" (PDF/CSV) functionality is coming soon.
+* **We are working toward a fully hosted web version of Tournament Manager.So users can host tournaments directly in their browser without needing to clone the repository or set up a local environment.**
+
 
 
