@@ -53,12 +53,13 @@ Then open [locahost:5000](http://127.0.0.1:5000) from your browser
 
 ## 📈 Roadmap & Limitations
 
-* Pairing Systems: Currently only supports the Swiss System.
-* Games: Currently the software can be only used for *scrabble*;support for *chess* is planned
+* **Pairing Systems**: Currently only supports the Swiss System.
+* **Games**: Currently the software can be only used for *scrabble*;support for *chess* is planned
 * **Tie-breaking**: Standings are currently calculated solely by margins.
 * **UI/UX**: A full interface overhaul is in progress.
 * **Exports**: "Download Pairings" (PDF/CSV) functionality is coming soon.
 * **We are working toward a fully hosted web version of Tournament Manager,So users can host tournaments directly in their browser without needing to clone the repository or set up a local environment.**
+
 
 
 
