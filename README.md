@@ -1,6 +1,6 @@
 # Tournament Manager 
 
-A tournament management engine built with **Python** and **Flask**. Currently only supported for **Scrabble**,
+A tournament management engine built with **Python** and **Flask**. Currently only supported for **Scrabble**.
 
 > [!IMPORTANT]  
 > **Note:** This project is in active development. Features like UI enhancements, advanced tie-breaking, and pairing exports are currently under construction.
@@ -59,6 +59,7 @@ Then open [locahost:5000](http://127.0.0.1:5000) from your browser
 * **UI/UX**: A full interface overhaul is in progress.
 * **Exports**: "Download Pairings" (PDF/CSV) functionality is coming soon.
 * **We are working toward a fully hosted web version of Tournament Manager,So users can host tournaments directly in their browser without needing to clone the repository or set up a local environment.**
+
 
 
 
