@@ -355,7 +355,7 @@ def submit_score(tourn_id, current_round):
 
     flash(f"Round {current_round} margins applied.")
     active_ref.update({'isactive':False})
-    return redirect(url_for('index'))
+    return redirect(url_for('view_tournament', tourn_id=tourn_id))
 
 if __name__ == '__main__':
     app.run(debug=True)
