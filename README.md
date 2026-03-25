@@ -3,7 +3,7 @@
 A tournament management engine built with **Python** and **Flask**. Currently only supported for **Scrabble**.
 
 > [!IMPORTANT]  
-> **Note:** This project is in active development. Features like UI enhancements, advanced tie-breaking, and pairing exports are currently under construction.
+> **Note:** This project is in active development. Features like advanced tie-breaking are currently under construction.
 
 
 ## ⚙️ Installation & Setup
@@ -37,9 +37,14 @@ Create a `.env` file in your root directory
 ``` env
 FLASK_SECRET_KEY =Use_a_random_string_here
 GOOGLE_APPLICATION_CREDENTIALS="service-account.json"
+ADMIN_USERNAME=Admin_Username
+ADMIN_PASSWORD=Admin_Password
 ```
 > [!IMPORTANT]  
 > **Note:** You should name the variables exactly as showen above.
+
+> [!IMPORTANT]  
+> **Note:** The Username and Password you define in the `.env` file will act as the username and password for primary admin. You can change the password and username according to your preference. You can make more admin accounts using the websitte itself.
 
 ### 4. Start the Programme
 
@@ -56,8 +61,7 @@ Then open [locahost:5000](http://127.0.0.1:5000) from your browser
 * **Pairing Systems**: Currently only supports the Swiss System.
 * **Games**: Currently the software can be only used for *scrabble*;support for *chess* is planned
 * **Tie-breaking**: Standings are currently calculated solely by margins.
-* **UI/UX**: A full interface overhaul is in progress.
-* **Exports**: "Download Pairings" (PDF/CSV) functionality is coming soon.
+
 
 
 
