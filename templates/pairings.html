@@ -47,62 +47,101 @@
                         <thead class="bg-light">
                             <tr class="text-muted small text-uppercase">
                                 <th class="ps-4 border-0" style="width: 80px;">Table</th>
-                                <th class="border-0">Team 1</th>
-                                <th class="border-0 text-center" style="width: 250px;">Scores</th>
-                                <th class="border-0 text-end pe-4">Team 2</th>
+                                <th class="border-0">{% if t_type == 'teamed' %}Team 1{% else %}Player 1{% endif %}</th>
+                                <th class="border-0 text-center" style="width: 280px;">VS</th>
+                                <th class="border-0 text-end pe-4">{% if t_type == 'teamed' %}Team 2{% else %}Player 2{% endif %}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for match in pairings %}
+                            {% set current_table = match.table if match.table is defined else loop.index %}
                             <tr>
-                                <td class="ps-4 fw-bold text-primary">#{{ match.table }}</td>
+                                <td class="ps-4 fw-bold text-primary">#{{ current_table }}</td>
                                 
-                                {% set t1 = match.t1 %}{% set t2 = match.t2 %}
+                                {% if match.t1 is defined or t_type == 'teamed' %}
+                                    {% set side1 = match.t1 %}
+                                    {% set side2 = match.t2 %}
+                                {% else %}
+                                    {% set side1 = match.p1 %}
+                                    {% set side2 = match.p2 %}
+                                {% endif %}
 
-                                <td><div class="fw-bold text-dark">{{ t1.name }}</div></td>
+                                <td id="cell-side1-{{ current_table }}">
+                                    <div class="fw-bold text-dark side-name-text">{{ side1.name if side1 else "Unknown" }}</div>
+                                </td>
                                 
                                 <td class="text-center">
-                                    <div class="d-flex align-items-center justify-content-center no-print">
-                                        <input type="hidden" name="opp_{{ t1.id }}" value="{{ t2.id if t2 else 'BYE' }}">
-
-                                        <div class="d-flex flex-column align-items-center">
-                                            {% if record_player and t1.players %}
-                                                {% for p in t1.players %}
-                                                    <div class="input-group input-group-sm mb-1" style="width: 110px;">
-                                                        <span class="input-group-text p-1 smallest bg-white" style="font-size: 0.6rem; width: 60px; overflow: hidden;">{{ p.name }}</span>
-                                                        <input type="number" name="p_score_{{ t1.id }}_{{ p.id }}" class="form-control form-control-sm text-center" placeholder="0">
-                                                    </div>
-                                                {% endfor %}
-                                            {% else %}
-                                                <input type="number" name="score_{{ t1.id }}" class="form-control form-control-sm text-center border-0 bg-light rounded-3" style="width: 60px;" placeholder="0">
-                                            {% endif %}
+                                    <div class="d-flex flex-column align-items-center justify-content-center no-print">
+                                        
+                                        {% if side2 %}
+                                        <div class="d-flex gap-1 mb-2">
+                                            <button type="button" class="btn btn-link p-0 text-danger smallest text-decoration-none fw-bold option-forfeit-btn" 
+                                                    onclick="triggerForfeit('{{ current_table }}', 1, '{{ side1.id }}', '{{ side2.id }}')">
+                                                <i class="fas fa-ban me-1"></i>Forfeit S1
+                                            </button>
+                                            <span class="text-muted small">|</span>
+                                            <button type="button" class="btn btn-link p-0 text-danger smallest text-decoration-none fw-bold option-forfeit-btn" 
+                                                    onclick="triggerForfeit('{{ current_table }}', 2, '{{ side2.id }}', '{{ side1.id }}')">
+                                                Forfeit S2<i class="fas fa-ban ms-1"></i>
+                                            </button>
+                                            <span class="text-muted small d-none reset-divider-{{ current_table }}">|</span>
+                                            <button type="button" class="btn btn-link p-0 text-secondary smallest text-decoration-none fw-bold d-none reset-btn-{{ current_table }}" 
+                                                    onclick="resetMatchFields('{{ current_table }}', '{{ side1.id }}', '{{ side2.id }}')">
+                                                Reset
+                                            </button>
                                         </div>
-                                        
-                                        <span class="mx-2 text-muted fw-bold">:</span>
-                                        
-                                        <div class="d-flex flex-column align-items-center">
-                                            {% if t2 %}
-                                                <input type="hidden" name="opp_{{ t2.id }}" value="{{ t1.id }}">
-                                                {% if record_player and t2.players %}
-                                                    {% for p in t2.players %}
-                                                        <div class="input-group input-group-sm mb-1" style="width: 110px;">
-                                                            <input type="number" name="p_score_{{ t2.id }}_{{ p.id }}" class="form-control form-control-sm text-center" placeholder="0">
+                                        {% endif %}
+
+                                        <input type="hidden" name="opp_{{ side1.id }}" value="{{ side2.id if side2 else 'BYE' }}">
+                                        <input type="hidden" name="forfeit_{{ side1.id }}" id="forfeit_input_{{ side1.id }}" value="false">
+                                        {% if side2 %}
+                                            <input type="hidden" name="forfeit_{{ side2.id }}" id="forfeit_input_{{ side2.id }}" value="false">
+                                        {% endif %}
+
+                                        <div class="d-flex align-items-center">
+                                            <div class="d-flex flex-column align-items-center input-wrapper-side1-{{ current_table }}">
+                                                {% if record_player and side1.players %}
+                                                    {% for p in side1.players %}
+                                                        <div class="input-group input-group-sm mb-1 sub-player-row" style="width: 110px;">
                                                             <span class="input-group-text p-1 smallest bg-white" style="font-size: 0.6rem; width: 60px; overflow: hidden;">{{ p.name }}</span>
+                                                            <input type="number" name="p_score_{{ side1.id }}_{{ p.id }}" class="form-control form-control-sm text-center" placeholder="0">
                                                         </div>
                                                     {% endfor %}
                                                 {% else %}
-                                                    <input type="number" name="score_{{ t2.id }}" class="form-control form-control-sm text-center border-0 bg-light rounded-3" style="width: 60px;" placeholder="0">
+                                                    <input type="number" name="score_{{ side1.id }}" id="score_field_{{ side1.id }}" 
+                                                        class="form-control form-control-sm text-center border-0 rounded-3 score-main-input {% if not side2 %}bg-light-secondary fw-bold {% else %}bg-light{% endif %}" 
+                                                        style="width: 60px; {% if not side2 %} pointer-events: none; {% endif %}" 
+                                                        value="{% if not side2 %}{{ defualt_bye }}{% endif %}"
+                                                        {% if not side2 %}readonly{% endif %} placeholder="0">
                                                 {% endif %}
-                                            {% else %}
-                                                <span class="badge bg-light text-muted border">BYE</span>
-                                            {% endif %}
+                                            </div>
+                                            
+                                            <span class="mx-2 text-muted fw-bold">:</span>
+                                            
+                                            <div class="d-flex flex-column align-items-center input-wrapper-side2-{{ current_table }}">
+                                                {% if side2 %}
+                                                    <input type="hidden" name="opp_{{ side2.id }}" value="{{ side1.id }}">
+                                                    {% if record_player and side2.players %}
+                                                        {% for p in side2.players %}
+                                                            <div class="input-group input-group-sm mb-1 sub-player-row" style="width: 110px;">
+                                                                <input type="number" name="p_score_{{ side2.id }}_{{ p.id }}" class="form-control form-control-sm text-center" placeholder="0">
+                                                                <span class="input-group-text p-1 smallest bg-white" style="font-size: 0.6rem; width: 60px; overflow: hidden;">{{ p.name }}</span>
+                                                            </div>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <input type="number" name="score_{{ side2.id }}" id="score_field_{{ side2.id }}" class="form-control form-control-sm text-center border-0 bg-light rounded-3 score-main-input" style="width: 60px;" placeholder="0">
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-light text-muted border">BYE</span>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="d-none d-print-block d-pdf-block"><span class="fw-bold fs-4">:</span></div>
                                 </td>
 
-                                <td class="text-end pe-4">
-                                    <div class="fw-bold text-dark">{{ t2.name if t2 else "BYE" }}</div>
+                                <td class="text-end pe-4" id="cell-side2-{{ current_table }}">
+                                    <div class="fw-bold text-dark side-name-text">{{ side2.name if side2 else "BYE" }}</div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -138,6 +177,71 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+// Forfeit UI State Modifier Engine
+function triggerForfeit(tableId, losingSideNum, loserId, winnerId) {
+    // Dynamically match user-defined default forfeit scores from the database manager
+    const forfeitWinScore = parseInt("{{ forfeit_score }}");
+
+    // Set matching tracking hidden fields
+    document.getElementById(`forfeit_input_${loserId}`).value = "true";
+    document.getElementById(`forfeit_input_${winnerId}`).value = "false";
+
+    // Set fallback display values for calculations using your user-defined rule config
+    const loserMainInput = document.getElementById(`score_field_${loserId}`);
+    const winnerMainInput = document.getElementById(`score_field_${winnerId}`);
+    
+    if (loserMainInput) loserMainInput.value = 0;
+    if (winnerMainInput) winnerMainInput.value = forfeitWinScore;
+
+    // Handle nested collection properties (Sub-Player fields) if active
+    document.querySelectorAll(`.input-wrapper-side${losingSideNum}-${tableId} input[type="number"]`).forEach(el => el.value = 0);
+    const winningSideNum = losingSideNum === 1 ? 2 : 1;
+    document.querySelectorAll(`.input-wrapper-side${winningSideNum}-${tableId} input[type="number"]`).forEach(el => el.value = forfeitWinScore);
+
+    // Apply clean visual striking cues
+    document.getElementById(`cell-side${losingSideNum}-${tableId}`).style.textDecoration = "line-through";
+    document.getElementById(`cell-side${losingSideNum}-${tableId}`).style.opacity = "0.5";
+    document.getElementById(`cell-side${winningSideNum}-${tableId}`).style.textDecoration = "none";
+    document.getElementById(`cell-side${winningSideNum}-${tableId}`).style.opacity = "1";
+    
+    // Inject dynamic badge for verification
+    removeForfeitBadges(tableId);
+    const badge = document.createElement('span');
+    badge.className = `badge bg-danger ms-2 forfeit-badge-${tableId}`;
+    badge.innerText = "FORFEIT";
+    document.getElementById(`cell-side${losingSideNum}-${tableId}`).querySelector('.side-name-text').appendChild(badge);
+
+    // Render management operations active
+    document.querySelector(`.reset-btn-${tableId}`).classList.remove('d-none');
+    document.querySelector(`.reset-divider-${tableId}`).classList.remove('d-none');
+}
+
+function resetMatchFields(tableId, side1Id, side2Id) {
+    document.getElementById(`forfeit_input_${side1Id}`).value = "false";
+    document.getElementById(`forfeit_input_${side2Id}`).value = "false";
+
+    const mainInput1 = document.getElementById(`score_field_${side1Id}`);
+    const mainInput2 = document.getElementById(`score_field_${side2Id}`);
+    if (mainInput1) mainInput1.value = "";
+    if (mainInput2) mainInput2.value = "";
+
+    document.querySelectorAll(`.input-wrapper-side1-${tableId} input[type="number"]`).forEach(el => el.value = "");
+    document.querySelectorAll(`.input-wrapper-side2-${tableId} input[type="number"]`).forEach(el => el.value = "");
+
+    document.getElementById(`cell-side1-${tableId}`).style.textDecoration = "none";
+    document.getElementById(`cell-side1-${tableId}`).style.opacity = "1";
+    document.getElementById(`cell-side2-${tableId}`).style.textDecoration = "none";
+    document.getElementById(`cell-side2-${tableId}`).style.opacity = "1";
+
+    removeForfeitBadges(tableId);
+    document.querySelector(`.reset-btn-${tableId}`).classList.add('d-none');
+    document.querySelector(`.reset-divider-${tableId}`).classList.add('d-none');
+}
+
+function removeForfeitBadges(tableId) {
+    document.querySelectorAll(`.forfeit-badge-${tableId}`).forEach(el => el.remove());
+}
+
 function exportToPDF() {
     const element = document.getElementById('printable-content');
     document.body.classList.add('is-exporting');

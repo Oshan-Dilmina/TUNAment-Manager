@@ -9,14 +9,16 @@ class SoloPair:
 
     def pair(self):
         
-        _, players = db_manager.player_info(self.tourn_id)
-        tourn = db_manager.get_tournament_by_id(self.tourn_id)
+        players = db_manager.get_players_for_tournament(self.tourn_id)
+        
         for p in players:
+            p.setdefault("is_paused", False)            
             p.setdefault("op", [])
             p.setdefault("byes", 0)     
             p.setdefault("last_bye_round", 0)
-
         
+        
+
         brackets = {}
         for p in players:
             brackets.setdefault(p["score"], []).append(p)
@@ -69,9 +71,10 @@ class SoloPair:
 
             bye_pair = {
                 "p1": bye_player,
-                "p2": "BYE",
-                "table": None
+                "p2": None,
+                "table": 'BYE'
             }
+            
         else:
             bye_pair = None
         
@@ -116,7 +119,10 @@ class SoloPair:
                     {"op": db_manager.firestore.ArrayUnion([p1["id"]])}
                 )
 
-        
+        if bye_pair:
+            pairings.append(bye_pair)
+
+        self.current_round += 1
         db_manager.update_tournament(
             self.tourn_id,
             {"round_count": self.current_round}

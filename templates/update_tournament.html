@@ -34,10 +34,9 @@
                             <div class="col-md-6">
                                 <div class="form-floating">
                                     <select class="form-select border-0 bg-light" id="status" name="status" required style="border-radius: 10px;">
-                                        <option value="Open" {% if tournament.status == 'Open' %}selected{% endif %}>Open</option>
-                                        <option value="Draft" {% if tournament.status == 'Draft' %}selected{% endif %}>Draft</option>
+                                        <option value="Ongoing" {% if tournament.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
                                         <option value="Upcoming" {% if tournament.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
-                                        <option value="Finished" {% if tournament.status == 'Finished' %}selected{% endif %}>Finished</option>
+                                        <option value="Ended" {% if tournament.status == 'Ended' %}selected{% endif %}>Ended</option>
                                     </select>
                                     <label for="status">Tournament Status</label>
                                 </div>

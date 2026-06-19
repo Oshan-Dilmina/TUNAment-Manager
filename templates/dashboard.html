@@ -63,8 +63,8 @@
                             </span>
                         </td>
                         <td>
-                            {% if t.status.lower() == 'open' %}
-                                <span class="badge bg-success rounded-pill px-3" style="font-size: 0.7rem;">LIVE</span>
+                            {% if t.status.lower() == 'ongoing' %}
+                                <span class="badge bg-success rounded-pill px-3" style="font-size: 0.7rem;">Ongoing</span>
                             {% else %}
                                 <span class="badge bg-secondary rounded-pill px-3" style="font-size: 0.7rem;">{{ t.status }}</span>
                             {% endif %}

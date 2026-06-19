@@ -142,7 +142,7 @@ def add_player_route(tourn_id):
     else:
         abort(400, description=addplayerform.errors)
 
-@app.route('/tournament/<tourn_id>/players/new/modal', methods=['GET'])
+@app.route('/tournament/<tourn_id>/players/new/modal', methods=['GET', 'POST'])
 @login_required
 def getnewplayer(tourn_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
@@ -197,7 +197,7 @@ def geteditplayer(tourn_id, player_id):
 @app.route('/tournament/<tourn_id>/players/<player_id>/edit', methods=['POST'])
 @login_required
 def edit_player(tourn_id, player_id):
-    # ... previous checks ...
+    
     editplayerform = EditPlayerForm()
     
     if editplayerform.validate_on_submit():
@@ -205,7 +205,8 @@ def edit_player(tourn_id, player_id):
             'firstname': editplayerform.firstname.data,
             'lastname': editplayerform.lastname.data,  # Make sure this is .lastname
             'name': f"{editplayerform.lastname.data},{editplayerform.firstname.data}",
-            'score': editplayerform.score.data
+            'score': editplayerform.score.data,
+            'is_paused': editplayerform.is_paused.data
         }
         db_manager.editplayer(player_id, tourn_id, newdata)
         return jsonify({'success': True})
@@ -217,14 +218,20 @@ def edit_player(tourn_id, player_id):
 def edit_team(tourn_id, team_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
     if not tourn_data:
-        abort(404, description=f'Tournament with ID "{tourn_id}" does not exsist')
+        abort(404, description=f'Tournament with ID "{tourn_id}" does not exist')
     
-
-
     data = db_manager.get_team_by_id(team_id, tourn_id)
     editteamform = EditTeamForm(data=data)
+    
     if editteamform.validate_on_submit():
-        newdata = {'name': editteamform.name.data, 'score': editteamform.score.data}
+        
+        
+        newdata = {
+            'name': editteamform.name.data, 
+            'score': editteamform.score.data,
+            'is_paused': editteamform.is_paused.data
+        }
+        
         db_manager.editteam(team_id, tourn_id, newdata)
         return jsonify({'success': True})
     else:
@@ -235,11 +242,11 @@ def edit_team(tourn_id, team_id):
 def geteditteam(tourn_id, team_id):
     tourn_data = db_manager.get_tournament_by_id(tourn_id)
     if not tourn_data: 
-        abort(404, description=f'Tournament with ID "{tourn_id}" does not exsist')
-
+        abort(404, description=f'Tournament with ID "{tourn_id}" does not exist')
 
     data = db_manager.get_team_by_id(team_id, tourn_id)
-    if not data: abort(404, description='Team you are looking for does not exsist')
+    if not data: 
+        abort(404, description='Team you are looking for does not exist')
     
     editteamform = EditTeamForm(data=data)
     return render_template('edit_team_modal.html', tourn_id=tourn_id, tourn_name=tourn_data['name'], data=data, form=editteamform)
@@ -257,7 +264,7 @@ def update_tourn_route(tourn_id):
         }
         db_manager.update_tournament(tourn_id, new_data)
         flash('Tournament updated successfully!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
         
     return render_template('update_tournament.html', tournament=tourn_data)
 
@@ -295,7 +302,7 @@ def delete_tourn_route(tourn_id):
     
     db_manager.delete_tournament(tourn_id)
     flash(f'Tournament deleted.', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('dashboard'))
 
 @app.route('/admins/delete/<username>', methods=['POST'])
 @login_required
@@ -340,13 +347,14 @@ def pairing(tourn_id):
         abort(404, description=f'Tournament with ID "{tourn_id}" does not exsist')
     
         
-    if tournament['status'] == 'over':
+    if tournament['status'] == 'Ended':
         abort(400, description="Tournament is already over.")
     
     if tournament['type'] == 'teamed' and len(db_manager.get_teams_for_tournament(tourn_id)) < 2:
         abort(400, description="Not enough Teams to start pairing.")
-    elif tournament['type'] == 'solo' and len(db_manager.get_players_alphabetical(tourn_id)) < 2:
+    elif tournament['type'] == 'solo' and len(db_manager.get_players_for_tournament(tourn_id)) < 2:
         abort(400, description="Not enough Players to start pairing.")
+    print(len(db_manager.get_players_for_tournament(tourn_id)))
     
     current_round = db_manager.get_tournament_current_round(tourn_id) + 1
     default_bye = tournament['defualt_bye']
@@ -377,7 +385,8 @@ def pairing(tourn_id):
                         t_type=db_manager.get_tournament_by_id(tourn_id)['type'],
                         tourn_name=db_manager.get_tournament_by_id(tourn_id)['name'],
                         round_count=round_count,
-                        defualt_bye=default_bye)
+                        defualt_bye=default_bye,
+                        forfeit_score=db_manager.get_forfeit_score(tourn_id))
 
 @app.route('/tournament/<tourn_id>/pair/<current_round>/submit', methods=['POST'])
 @login_required
@@ -388,49 +397,87 @@ def submit_score(tourn_id, current_round):
     
     col_name = 'players' if tourn['type'] == 'solo' else 'teams'
     part_ref = db_manager.tref.document(tourn_id).collection(col_name)
+    round_ref = db_manager.tref.document(tourn_id).collection('rounds').document(current_round)
+    
     processed_ids = []
+
+    # Pull current saved structural matches map array to mutate match status fields safely
+    round_doc = round_ref.get()
+    pairs_list = round_doc.to_dict().get('pairs', []) if round_doc.exists else []
 
     for key in request.form:
         if key.startswith('score_'):
             p1_id = key.replace('score_', '')
             
-            # Skip if already handled or it's a BYE
             if p1_id in processed_ids or p1_id == "None" or p1_id == "BYE":
                 continue
 
             p2_id = request.form.get(f'opp_{p1_id}')
             
-            # Get scores, default to 0 if empty
+            # Read hidden state string inputs sent via browser trigger logic
+            p1_forfeited = request.form.get(f'forfeit_{p1_id}') == 'true'
+            p2_forfeited = request.form.get(f'forfeit_{p2_id}') == 'true' if p2_id else False
+
             try:
                 s1 = int(request.form.get(f'score_{p1_id}') or 0)
             except ValueError: s1 = 0
 
-            # Logic for a real match
+            # Logic processing for match pairs
             if p2_id and p2_id != "BYE" and p2_id != "None":
                 try:
                     s2 = int(request.form.get(f'score_{p2_id}') or 0)
                 except ValueError: s2 = 0
                 
+                # Check execution overrides for manual structural forfeits
+                match_status = "completed"
+                if p1_forfeited or p2_forfeited:
+                    match_status = "forfeit"
+                    if p1_forfeited:
+                        s1, s2 = 0, db_manager.get_forfeit_score(tourn_id)
+                    else:
+                        s1, s2 = db_manager.get_forfeit_score(tourn_id), 0
+
                 m1 = s1 - s2
                 m2 = s2 - s1
                 
-                # Update P1
+                # Update Participant 1 Margin
                 part_ref.document(p1_id).update({"score": db_manager.firestore.Increment(m1)})
-                # Update P2
+                # Update Participant 2 Margin
                 part_ref.document(p2_id).update({"score": db_manager.firestore.Increment(m2)})
                 
+                # Inline update the array map structure inside the round document
+                for match in pairs_list:
+                    # Generic lookup handling matching targets (handles team objects and solo elements)
+                    m_p1 = match.get('t1') or match.get('p1')
+                    m_p2 = match.get('t2') or match.get('p2')
+                    
+                    if m_p1 and m_p2 and m_p1['id'] == p1_id and m_p2['id'] == p2_id:
+                        match['s1'] = s1
+                        match['s2'] = s2
+                        match['status'] = match_status
+                        if match_status == "forfeit":
+                            match['forfeited_id'] = p1_id if p1_forfeited else p2_id
+
                 processed_ids.append(p2_id)
             
-            # Logic for a BYE
+            # Logic processing for standalone BYEs
             else:
                 part_ref.document(p1_id).update({"score": db_manager.firestore.Increment(s1)})
+                for match in pairs_list:
+                    m_p1 = match.get('t1') or match.get('p1')
+                    if m_p1 and m_p1['id'] == p1_id:
+                        match['s1'] = s1
+                        match['status'] = "bye"
 
             processed_ids.append(p1_id)
 
-    # Deactivate the round
-    db_manager.tref.document(tourn_id).collection('rounds').document(current_round).update({'isactive': False})
+    # Deactivate the round and commit mutated pair lists data block array safely back down to Firestore
+    round_ref.update({
+        'isactive': False,
+        'pairs': pairs_list
+    })
     
-    flash(f"Round {current_round} results submitted successfully!")
+    flash(f"Round {current_round} results submitted successfully!", "success")
     return redirect(url_for('view_tournament', tourn_id=tourn_id))
 
 @app.route('/admins')
@@ -455,4 +502,4 @@ def forbidden_unauthorized(e):
     return render_template('403.html',e=e,code=e.code), e.code
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=True)

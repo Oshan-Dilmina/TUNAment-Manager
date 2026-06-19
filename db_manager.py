@@ -228,9 +228,35 @@ def player_info(tourn_id):
             'lastname': data.get('lastname', 'N/A Player'), # Fixed label
             'name' : data.get('name', 'N/A Player'),
             'score': data.get('score', 0),
+            'is_paused': data.get('is_paused', False),
             'id' : doc.id
         })
     return tourn_name, info
+
+def get_players_for_tournament(tourn_id):
+    tourn_data = get_tournament_by_id(tourn_id)
+    if not tourn_data or tourn_data.get('name') == "Tournament not found":
+        return "Tournament not found", []
+
+    tourn_name = tourn_data.get('name', 'Unnamed Tournament')
+    
+    info = []
+
+    players_ref = tref.document(tourn_id).collection('players')
+    
+    for doc in players_ref.stream():
+        data = doc.to_dict()
+        if not data.get('is_paused', False):
+            info.append({
+                'firstname': data.get('firstname', 'N/A Player'),
+                'lastname': data.get('lastname', 'N/A Player'), # Fixed label
+                'name' : data.get('name', 'N/A Player'),
+                'score': data.get('score', 0),
+                'is_paused': data.get('is_paused', False),
+                'id' : doc.id
+            })
+
+    return info
 
 def get_player_by_id(player_id,tourn_id):
     if tref is None: return None
@@ -321,3 +347,10 @@ def get_round_pairings(tourn_id, round_number):
             't_type': t_data.get('type', 'solo')
         }
     return None
+
+def get_forfeit_score(tourn_id):
+    if tref is None: return None
+    doc = tref.document(tourn_id)
+    score = doc.get().to_dict().get('forfeit_score', 10)
+
+    return score

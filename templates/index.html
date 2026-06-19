@@ -14,9 +14,9 @@
             <div class="card h-100 shadow-sm border-0 hover-lift" style="border-radius: 20px; transition: transform 0.2s;">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="mb-3">
-                        {% if t.status.lower() == 'open' %}
+                        {% if t.status.lower() == 'ongoing' %}
                             <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">
-                                <i class="fas fa-circle me-1 small pulse"></i> Live Now
+                                <i class="fas fa-circle me-1 small pulse"></i> Ongoing
                             </span>
                         {% else %}
                             <span class="badge bg-secondary rounded-pill px-3 py-2">
