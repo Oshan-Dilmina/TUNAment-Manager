@@ -502,4 +502,4 @@ def forbidden_unauthorized(e):
     return render_template('403.html',e=e,code=e.code), e.code
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',debug=True)
+    app.run(debug=True)

@@ -4,19 +4,6 @@
 <div class="pdf-wrapper" id="printable-content">
     
     <div class="main-content-area">
-        <div class="d-none d-print-block d-pdf-block mb-4">
-            <div class="d-flex justify-content-between align-items-end border-bottom pb-3">
-                <div>
-                    <h1 class="fw-bold mb-0 text-primary">TUNAment Manager</h1>
-                    <p class="text-muted mb-0">Official pairings for {{ tourn_name }}</p>
-                </div>
-                <div class="text-end">
-                    <h3 class="fw-bold mb-0">{{ tourn_name }}</h3>
-                    <span class="badge border text-dark">Round {{ round_count }}</span>
-                </div>
-            </div>
-        </div>
-
         <div class="d-flex justify-content-between align-items-center mb-4 no-print">
             <div>
                 <h2 class="fw-bold text-dark mb-0">
@@ -29,10 +16,7 @@
                     <i class="fas fa-file-csv me-2"></i>Export CSV
                 </a>
                 <button type="button" onclick="exportToPDF()" class="btn btn-outline-danger rounded-pill px-4 me-2">
-                    <i class="fas fa-file-pdf me-2"></i>Export PDF
-                </button>
-                <button type="button" onclick="window.print()" class="btn btn-outline-primary rounded-pill px-4 me-2">
-                    <i class="fas fa-print me-2"></i>Print Score Sheet
+                    <i class="fas fa-print me-2"></i>Print Pairings
                 </button>
                 <a href="{{ url_for('view_tournament', tourn_id=tourn_id) }}" class="btn btn-light rounded-pill px-4">
                     <i class="fas fa-arrow-left me-2"></i>Back
@@ -137,7 +121,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="d-none d-print-block d-pdf-block"><span class="fw-bold fs-4">:</span></div>
                                 </td>
 
                                 <td class="text-end pe-4" id="cell-side2-{{ current_table }}">
@@ -156,26 +139,8 @@
             </form>
         </div>
     </div>
-
-    <div class="footer-bottom-fixed d-none d-print-block d-pdf-block">
-        <div class="border-top pt-2 mt-4">
-            <div class="d-flex justify-content-between align-items-end">
-                <div class="footer-credits">
-                    <p class="mb-0 fw-bold small text-dark">{{ tourn_name }}</p>
-                    <p class="mb-0 smallest text-muted">Powered by <strong>TUNAment Manager</strong> • 2026</p>
-                    <p class="mb-0 smallest text-muted">https://github.com/Oshan-Dilmina/Tournament-Manager</p>
-                </div>
-                <div class="text-center">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}tournament/{{ tourn_id }}/standings"
-                         alt="QR Code" style="width: 55px; height: 55px; opacity: 0.9;">
-                    <div class="smallest text-muted" style="font-size: 0.6rem;">Scan for current standings</div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 // Forfeit UI State Modifier Engine
 function triggerForfeit(tableId, losingSideNum, loserId, winnerId) {
@@ -242,39 +207,207 @@ function removeForfeitBadges(tableId) {
     document.querySelectorAll(`.forfeit-badge-${tableId}`).forEach(el => el.remove());
 }
 
-function exportToPDF() {
-    const element = document.getElementById('printable-content');
-    document.body.classList.add('is-exporting');
-    const opt = {
-        margin: [0.3, 0.4, 0.3, 0.4],
-        filename: '{{ tourn_name|replace(" ", "_") }}_Round_{{ round_count }}.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save().then(() => {
-        document.body.classList.remove('is-exporting');
-    });
+function buildPdfHeaderHTML() {
+    return `
+        <div class="pdf-page-header mb-3">
+            <div class="pdf-header-row border-bottom pb-3">
+                <div class="pdf-header-right">
+                    <h3 class="fw-bold mb-0">{{ tourn_name }}</h3>
+                    <span class="badge border text-dark">Round {{ round_count }}</span>
+                </div>
+                <div class="pdf-header-left">
+                    <h1 class="fw-bold mb-0 text-primary">TUNAment Manager</h1>
+                    <p class="text-muted mb-0">Official pairings for {{ tourn_name }}</p>
+                </div>
+            </div>
+        </div>`;
 }
+
+function buildPdfExportContainer() {
+    // Grab every pairing row from the live, on-screen table.
+    const sourceRows = Array.from(document.querySelectorAll('#printable-content table tbody tr'));
+
+    const container = document.createElement('div');
+    container.id = 'pdf-export-root';
+
+    // Header once at the top of the document.
+    const headerWrap = document.createElement('div');
+    headerWrap.innerHTML = buildPdfHeaderHTML();
+    container.appendChild(headerWrap.firstElementChild);
+
+    // ONE continuous table for all rows. Browsers natively repeat a
+    // <thead> at the top of each printed page when a table spans
+    // multiple pages (as long as the thead/tbody aren't forced into a
+    // single non-breaking block), so rows simply flow and break wherever
+    // they naturally fit - no manual "10 per page" chunking, no leftover
+    // blank space on a page that has room for more rows.
+    const table = document.createElement('table');
+    table.className = 'table pdf-export-table mb-0';
+    table.innerHTML = `
+        <thead>
+            <tr class="text-muted small text-uppercase">
+                <th class="ps-2" style="width: 60px;">Table</th>
+                <th>{% if t_type == 'teamed' %}Team 1{% else %}Player 1{% endif %}</th>
+                <th class="text-center" style="width: 100px;">VS</th>
+                <th class="text-end pe-2">{% if t_type == 'teamed' %}Team 2{% else %}Player 2{% endif %}</th>
+            </tr>
+        </thead>
+        <tbody></tbody>`;
+    const tbody = table.querySelector('tbody');
+
+    sourceRows.forEach(sourceRow => {
+        const clone = sourceRow.cloneNode(true);
+
+        // Strip interactive/editing-only UI from the clone so the
+        // exported sheet just shows table number, names and ':'.
+        clone.querySelectorAll('.no-print, button, .btn').forEach(el => el.remove());
+        clone.querySelectorAll('input').forEach(el => el.remove());
+
+        // Make sure the VS cell only keeps a clean ':' separator.
+        const cells = clone.querySelectorAll('td');
+        if (cells.length >= 4) {
+            cells[2].innerHTML = '<span class="fw-bold fs-5">:</span>';
+        }
+        tbody.appendChild(clone);
+    });
+
+    container.appendChild(table);
+
+    return container;
+}
+
+function exportToPDF() {
+    const exportRoot = buildPdfExportContainer();
+    exportRoot.id = 'pdf-export-root';
+
+    const builtRows = exportRoot.querySelectorAll('tbody tr').length;
+    console.log('exportToPDF: built', builtRows, 'row(s).');
+    if (builtRows === 0) {
+        alert('No pairings found to export.');
+        return;
+    }
+
+    // Insert the paginated export structure into the page, then use the
+    // browser's own native print-to-PDF (window.print -> "Save as PDF" in
+    // the print dialog). This avoids html2canvas/html2pdf entirely, so
+    // there's no canvas rasterization, no CORS/tainted-canvas failure
+    // mode, and no third-party library that can silently produce a blank
+    // result. Pagination, header/footer repetition, and the "Page X of Y"
+    // numbering all come from the same buildPdfExportContainer() structure
+    // already in use, styled for print via the #pdf-export-root print CSS
+    // below (which forces a page break at each .html2pdf__page-break
+    // marker - the class name is kept only so nothing else has to change).
+    document.body.appendChild(exportRoot);
+    document.body.classList.add('is-pdf-exporting');
+
+    const cleanup = () => {
+        document.body.classList.remove('is-pdf-exporting');
+        if (exportRoot.parentNode) {
+            exportRoot.parentNode.removeChild(exportRoot);
+        }
+        window.removeEventListener('afterprint', cleanup);
+    };
+
+    // afterprint fires once the print dialog is closed (whether the user
+    // saved a PDF or cancelled), so we can safely remove the temporary
+    // export structure at that point.
+    window.addEventListener('afterprint', cleanup);
+
+    // Give the browser a moment to lay out the newly-inserted content
+    // before opening the print dialog.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.print();
+    }));
+}
+
 </script>
 
 <style>
     .smallest { font-size: 0.7rem; line-height: 1.2; }
-    .pdf-wrapper { display: flex; flex-direction: column; min-height: 90vh; }
-    .main-content-area { flex: 1; }
-    .d-pdf-block { display: none !important; }
+    .pdf-wrapper { min-height: 90vh; }
+
+    /* The export structure built by buildPdfExportContainer() is only
+       ever meant to be printed, never seen on screen. */
+    #pdf-export-root {
+        display: none;
+        background: #ffffff;
+        font-family: inherit;
+    }
 
     @media print {
         .no-print, nav, .navbar { display: none !important; }
         body { background-color: white !important; font-size: 11pt; margin: 0; }
-        .pdf-wrapper { height: 98vh; }
-        .footer-bottom-fixed { display: block !important; margin-top: auto; padding-bottom: 10px; }
-        .table td, .table th { border-top: 1px solid #eee !important; padding: 12px 8px !important; }
-        .d-print-block { display: block !important; }
+
+        /* The Export PDF pairings table should print with no row/column
+           borders at all. */
+        #pdf-export-root .pdf-export-table td,
+        #pdf-export-root .pdf-export-table th {
+            border: none !important;
+        }
+
+        /* exportToPDF() injects #pdf-export-root and triggers
+           window.print() - show ONLY that structure (its own header and
+           continuously-flowing table) and hide the normal live editing
+           layout entirely, since printing is only ever triggered through
+           the "Print Pairings" button. */
+        body.is-pdf-exporting .pdf-wrapper {
+            display: none !important;
+        }
+        body.is-pdf-exporting #pdf-export-root {
+            display: block !important;
+        }
     }
 
-    body.is-exporting .no-print { display: none !important; }
-    body.is-exporting .d-pdf-block { display: block !important; }
-    body.is-exporting .pdf-wrapper { height: 10.4in; } 
+    /* --- PDF export-only structure (built dynamically by exportToPDF) --- */
+    #pdf-export-root {
+        padding: 4px 6px;
+        box-sizing: border-box;
+    }
+    #pdf-export-root .pdf-export-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    /* Repeats the column header row at the top of every printed page the
+       table spans across - standard, native browser behaviour for
+       <thead> in a printed table, so rows simply flow page to page with
+       no manual chunking and no leftover blank space. */
+    #pdf-export-root .pdf-export-table thead {
+        display: table-header-group;
+    }
+    #pdf-export-root .pdf-export-table tbody tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    #pdf-export-root .pdf-export-table th,
+    #pdf-export-root .pdf-export-table td {
+        border: none;
+        padding: 12px 8px;
+        text-align: left;
+    }
+    #pdf-export-root .pdf-export-table th:last-child,
+    #pdf-export-root .pdf-export-table td:last-child {
+        text-align: right;
+    }
+    #pdf-export-root .pdf-export-table th:nth-child(3),
+    #pdf-export-root .pdf-export-table td:nth-child(3) {
+        text-align: center;
+    }
+
+    /* Header layout uses floats instead of flexbox. Firefox has
+       long-standing bugs rendering flex containers across a print page
+       break - content can be clipped or simply not rendered at all. Floats
+       have been reliably supported in every browser's print engine for
+       decades, so this sidesteps that bug entirely. Used by both the live
+       print header and the Export PDF (JS-built) header. */
+    .pdf-header-row {
+        overflow: hidden; /* clearfix so the row's height includes the floats */
+    }
+    .pdf-header-right {
+        float: right;
+        text-align: right;
+    }
+    .pdf-header-left {
+        float: left;
+    }
 </style>
 {% endblock %}
